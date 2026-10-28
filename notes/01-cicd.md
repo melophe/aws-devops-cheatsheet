@@ -71,3 +71,9 @@
 - ドメインポリシーで aws:PrincipalOrgID を使うと、組織内のアカウントに許可できる。リポジトリの RAM 共有はできない
 - クライアントは `aws codeartifact login` で一時トークンを取得する
 - 閉域では、codeartifact.api と codeartifact.repositories のエンドポイントと、S3 のゲートウェイエンドポイントが要る。認可（GetAuthorizationToken、GetRepositoryEndpoint、ReadFromRepository、sts:GetServiceBearerToken）は別に必要
+
+## パイプラインの補足
+
+- 別アカウントにデプロイするパイプライン: デプロイ先のアカウントにロールを作り（信頼ポリシーで元のアカウントを許可）、パイプラインのサービスロールがそのロールを AssumeRole する。アーティファクトの暗号化に使う KMS のカスタマーマネージドキーのキーポリシーでも、そのロールを許可する。aws/s3 のキーはキーポリシーを編集できないので、復号を許可できない
+- GitHub の 1 つのリポジトリから環境ごとに展開する: 環境ごとのブランチと、環境ごとのパイプライン（ソースは CodeConnections）を作り、本番のパイプラインには手動承認アクションを入れる。SNS の通知だけでは、パイプラインは止まらない
+- Marketplace 由来の AMI が使えなくなったときは、稼働中のインスタンスから AMI を作り直し、その AMI で起動テンプレートの新しいバージョンを作って、ASG を新しいバージョンに更新する

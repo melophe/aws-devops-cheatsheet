@@ -37,3 +37,8 @@
 - Lambda は EFS をマウントできる。FSx は、Lambda からはマウントできない
 - EBS の暗号化は、既存のボリュームにはそのままかけられない。暗号化したスナップショットのコピーから作り直す
 - EBS のデフォルト暗号化は、これから作るボリュームに効く設定
+
+## ECS のタスクが止まる理由を調べる
+
+- EventBridge の ECS Task State Change イベント（lastStatus が STOPPED）には、stoppedReason とコンテナの終了コードが含まれる。ルールのターゲットを CloudWatch Logs にすると、Logs Insights で調べられる
+- 止まったタスクは、一定時間がたつと API から見えなくなるので、定期的に DescribeTasks で拾う方式は、取りこぼしが出る
