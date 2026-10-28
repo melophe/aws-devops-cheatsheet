@@ -42,3 +42,12 @@
 
 - EventBridge の ECS Task State Change イベント（lastStatus が STOPPED）には、stoppedReason とコンテナの終了コードが含まれる。ルールのターゲットを CloudWatch Logs にすると、Logs Insights で調べられる
 - 止まったタスクは、一定時間がたつと API から見えなくなるので、定期的に DescribeTasks で拾う方式は、取りこぼしが出る
+
+## 処理の遅れと、小さな補足
+
+- SQS ＋ Lambda ＋ DynamoDB の処理が遅れるときは、消費側（Lambda の同時実行数、イベントソースマッピングの最大同時実行数）と、書き込み側（DynamoDB Auto Scaling の最大 WCU、WriteThrottleEvents）の両方を確認する。片方だけでは、もう片方に詰まりが残る
+- Lambda のエイリアスの重みは、update-alias の --routing-config で、手動でも制御できる（カナリアを確認しながら引き上げる）
+- S3 のオブジェクト作成を EventBridge に通知すると、ルールから Step Functions を起動できる。複数の処理を同時に走らせるなら、Parallel 状態（Express は高頻度に向く）
+- Athena で S3 のサーバーアクセスログを調べるには、ログの場所を指定した外部テーブルを作る。ログを移さずに、標準 SQL で調べられる
+- Beanstalk で、新旧の割合を試すなら、環境を複製して、CNAME のスワップ（blue/green）や、Route 53 の加重ルーティングで割合を決める
+- FSx for ONTAP をマウントする EC2 の ASG は、起動テンプレートの新しいバージョンにマウントの処理を追加し、インスタンスリフレッシュで、既存のインスタンスを置き換える

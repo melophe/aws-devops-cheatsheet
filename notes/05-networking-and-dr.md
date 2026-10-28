@@ -51,3 +51,12 @@
 - NAT ゲートウェイは、AZ ごとに作り、ルートテーブルも AZ ごとに用意する
 - WorkSpaces のリージョン冗長は、接続エイリアス（共通の接続文字列）と Route 53 のフェイルオーバーで、登録コードを変えずに切り替える
 - AWS の外のデバイスの MQTT は、IoT Core（カスタムドメインで独自のドメインを使える）。エッジで動かし続けるなら Greengrass
+
+## ストレージと DB の補足
+
+- EBS のスナップショットの自動化は、Data Lifecycle Manager（DLM）で、タグを対象に、日次の取得、保持、クロスリージョンコピーのルールを作れる。EBS だけなら DLM が軽く、EC2・RDS・EFS などをまとめて管理するなら AWS Backup
+- Aurora のエンドポイント: クラスターエンドポイント（書き込み。フェイルオーバーに追従する）、リーダーエンドポイント（読み取りを分散する）、インスタンスエンドポイント（個別。フェイルオーバーで手動の変更が要る）
+- Aurora のクロスリージョンリードレプリカを、障害時に自動で昇格する: EventBridge で RDS のイベント（カテゴリ failure）を検知 → Lambda で PromoteReadReplicaDBCluster → 新しいエンドポイントを Parameter Store に反映する。FailoverDBCluster は同一クラスター内で、ModifyDBCluster では昇格できない
+- Aurora のマイナーバージョンは、自動アップグレードを有効にすると、メンテナンスウィンドウ内で更新される。メジャーバージョンは手動で、事前にスナップショットと、テスト環境での検証を行う。ローリングは、リードレプリカを先に更新して昇格させ、旧ライターを更新する
+- Lambda@Edge は、環境変数が使えず、VPC 内のリソースへ直接接続できず、us-east-1 でデプロイして、全エッジに配られる
+- S3 の Glacier の取り出し: Glacier Instant Retrieval（ミリ秒）、Flexible Retrieval（数分〜数時間）、Deep Archive（約 12 時間）。Intelligent-Tiering にも、アーカイブ用の階層がある。ライフサイクルルールの AbortIncompleteMultipartUpload で、未完了のアップロードを削除できる

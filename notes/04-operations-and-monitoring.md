@@ -53,3 +53,14 @@
 - 起動の失敗は、通知タイプ autoscaling:EC2_INSTANCE_LAUNCH_ERROR で直接通知できる
 - Lambda の同時実行: プロビジョニング済み（コールドスタート対策。Application Auto Scaling でスケジュールも可）と、予約済み（上限の確保で、初期化遅延は解消しない）
 - ECS サービスの healthCheckGracePeriodSeconds は、起動直後に ALB のヘルスチェックで止められないための猶予
+
+## 自動対処の追加パターン
+
+- EC2 の起動時の自動タグ付け: RunInstances の API を EventBridge で検知し、Lambda が、イベントの userIdentity から起動したプリンシパルの名前を取り出して、起動したインスタンスにタグを付ける
+- アラームの状態変化を EventBridge で受けて、SSM Automation で、アプリのプロセスだけを再起動できる（インスタンスの再起動は要らない）
+- AWS Health の EC2 の退役・予定メンテナンスのイベント → EventBridge → SSM Automation で、停止 → 起動（物理ホストの移動）。既存のメンテナンスウィンドウの中で実行したいなら、Lambda でウィンドウのタスクに登録する
+- 古い AMI に SSM Agent が入っていないときは、Image Builder で SSM Agent を組み込んだ AMI を再構築して置き換え、インスタンスプロファイルと、NAT がなければ SSM の VPC エンドポイントを用意する
+- ALB のヘルスチェックは、ステータスコードしか見ない。応答の中身が不正でも通ってしまうので、CloudWatch Synthetics のカナリアで API のシナリオを実行し、成功率をアラームにする（ECS のデプロイのアラームにも使える）
+- Contributor Insights のルールの出力は、メトリクス数式 INSIGHT_RULE_METRIC で、アラーム（異常検出バンド）にできる
+- ASG のスケールイン保護は、終了の候補から外すもの。ライフサイクルフックは、終了の前に猶予を作るもの。別の機能
+- ASG のインスタンスの状態遷移: Pending → Pending:Wait → Pending:Proceed → InService、Terminating → Terminating:Wait → Terminating:Proceed → Terminated
